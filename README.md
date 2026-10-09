@@ -15,9 +15,10 @@
 
 ```
 fileProject/
-├── encoding.py        # 编码 / 解码核心逻辑
-├── send_log.py        # 客户端：发送编码后的文件分片
-├── file_download.py   # 服务端：接收分片并提供文件服务
+├── file_codec.py      # 编码 / 解码核心逻辑
+├── file_codec_test.py # 编解码测试代码
+├── client.py          # 客户端：发送编码后的文件分片
+├── server.py          # 服务端：接收分片并提供文件服务
 ├── server_files/      # 服务端还原后的文件存储目录
 └── server_tmp/        # 服务端接收到的分片临时存储目录
 ```
@@ -33,14 +34,14 @@ pip install flask requests
 
 ## 工作原理
 
-1. **编码**（`encoding.py`）
+1. **编码**（`file_codec.py`）
    - 读取原始文件，计算 SHA-256。
    - 对数据做轻量加密，并添加文件 ID、分片索引、总分片数、文件名与摘要等前缀信息。
    - 每个分片转为 Base64 文本，写入 `client_tmp/<file_id>.txt`，每行一个分片。
-2. **发送**（`send_log.py`）
+2. **发送**（`client.py`）
    - 随机打乱分片顺序后逐行读取。
    - 以 `GET {base_url}/wskkey<base64>` 形式发送，服务端将 URL 路径作为载荷接收。
-3. **接收与还原**（`file_download.py`）
+3. **接收与还原**（`server.py`）
    - `/log/<base64_content>` 接口校验 `wskkey` 前缀后，将分片追加到 `server_tmp/<file_id>.txt`。
    - 尝试重组、解密并通过 SHA-256 校验，成功后写入 `server_files/<文件名>`。
    - 返回仍需补发的分片索引，客户端据此循环补发直到完整。
@@ -50,32 +51,32 @@ pip install flask requests
 ### 1. 启动服务端
 
 ```bash
-python file_download.py
+python server.py
 ```
 
 默认监听 `0.0.0.0:80`。
 
 ### 2. 发送文件
 
-编辑 `send_log.py` 中的文件路径与目标地址后运行：
+编辑 `client.py` 中的文件路径与目标地址后运行：
 
 ```bash
-python send_log.py
+python client.py
 ```
 
 其中：
 
-- `encoding.encoding("client_files", "DJI_0006.JPG")` 指定待发送文件。
+- `file_codec.encoding(file_codec.CLIENT_FILES_DIR, "DJI_0006.JPG")` 指定待发送文件。
 - `base_url` 指定服务端地址，例如 `http://127.0.0.1/log`。
 
 > 注意：客户端编码依赖 `client_files` 目录（存放待发送文件）与 `client_tmp` 目录（存放编码结果），请提前创建。
 
 ### 3. 直接编解码（可选）
 
-`encoding.py` 支持独立运行，用于本地测试编解码流程：
+`file_codec_test.py` 用于本地测试编解码流程：
 
 ```bash
-python encoding.py
+python file_codec_test.py
 ```
 
 ## 服务端接口

@@ -2,7 +2,7 @@ import logging
 
 from flask import Flask, send_from_directory, abort, render_template_string, request, redirect, url_for, flash
 from pathlib import Path
-import encoding
+import file_codec
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # 用于flash消息加密
@@ -157,13 +157,13 @@ def serve_files(filename=''):
 
 @app.route('/log/<path:base64_content>')
 def log_request(base64_content):
-    if not base64_content.startswith(encoding.KEY_PREFIX):
+    if not base64_content.startswith(file_codec.KEY_PREFIX):
         print("Key error")
         return "Key error", 200
-    base64_content = base64_content[len(encoding.KEY_PREFIX):]
+    base64_content = base64_content[len(file_codec.KEY_PREFIX):]
     # 获取文件名
     try:
-        file_id = encoding.decoding_first_line(base64_content)
+        file_id = file_codec.decoding_first_line(base64_content)
         filename = TMP_DIR / f"{file_id}.txt"
     except:
         print("Base64 error")
@@ -172,7 +172,7 @@ def log_request(base64_content):
     # 将内容写入文件
     with open(filename, 'a') as f:
         f.write(base64_content + '\n')
-    lack_index, sha256_status, write_status = encoding.decoding(filename)
+    lack_index, sha256_status, write_status = file_codec.decoding(filename, FILE_SERVER_ROOT)
     return f"Need {lack_index} file_id {file_id} sha256 {sha256_status} write {write_status}", 200
 
 

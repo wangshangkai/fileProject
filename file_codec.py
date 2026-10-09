@@ -16,6 +16,10 @@ OTHER_HEADER_LEN = 2 * INT_LEN  # 8
 FILE_ID_MIN = 10000000
 FILE_ID_MAX = 99999999
 
+# 客户端目录常量
+CLIENT_FILES_DIR = "client_files"
+CLIENT_TMP_DIR = "client_tmp"
+
 
 def encrypt(binary_data):
     result = []
@@ -94,7 +98,7 @@ def encoding(input_file_path, file_name):
         binary_data = file.read()
 
     file_id = random.randint(FILE_ID_MIN, FILE_ID_MAX)
-    while os.path.exists(f"client_tmp/{file_id}.txt"):
+    while os.path.exists(os.path.join(CLIENT_TMP_DIR, f"{file_id}.txt")):
         file_id = random.randint(FILE_ID_MIN, FILE_ID_MAX)
     sha256 = hashlib.sha256(binary_data).digest()  # sha256在加密前
     binary_data = encrypt(binary_data)  # 加密
@@ -102,13 +106,14 @@ def encoding(input_file_path, file_name):
 
     # 将二进制数据编码为Base64
     base64_data = [base64.b64encode(da).decode() for da in encoding_binary_data]
-    with open(f"client_tmp/{file_id}.txt", 'w') as f:
+    tmp_file_path = os.path.join(CLIENT_TMP_DIR, f"{file_id}.txt")
+    with open(tmp_file_path, 'w') as f:
         f.write('\n'.join(base64_data))
-    print(f"Done! Write to file client_tmp/{file_id}.txt")
-    return f"client_tmp/{file_id}.txt"
+    print(f"Done! Write to file {tmp_file_path}")
+    return tmp_file_path
 
 
-def decoding(file_name):
+def decoding(file_name, output_dir):
     with open(file_name, 'r') as file:
         base64_data = file.readlines()
     encoding_binary_data = [base64.b64decode(da.replace('\n', '')) for da in base64_data]
@@ -123,15 +128,8 @@ def decoding(file_name):
         sha256_status = True
     else:
         print("Sha256 checking error!")
-    with open('server_files/' + path, 'wb') as file:
+    with open(os.path.join(output_dir, path), 'wb') as file:
         file.write(binary_data)
         print(f"Write to {path}")
         write_status = True
     return lack_index, sha256_status, write_status
-
-
-if __name__ == '__main__':
-    path = encoding("client_files", "DJI_0002.JPG")
-    print(path)
-    lack_index, sha256_status, write_status = decoding(path)
-    print(lack_index, sha256_status, write_status)
