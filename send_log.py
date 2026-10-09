@@ -14,7 +14,7 @@ def send_logs(file_path, base_url):
         if not line:
             continue  # 跳过空行
         try:
-            response = requests.get(f"{base_url}/wskkey{line}", timeout=5)
+            response = requests.get(f"{base_url}/{encoding.KEY_PREFIX}{line}", timeout=5)
             print(f"Index {index}, Line {send_index}: [HTTP {response.status_code}] {response.text}")
             if response.text.startswith("Need"):
                 lack_index = int(response.text.split(" ")[1])
@@ -25,7 +25,7 @@ def send_logs(file_path, base_url):
         if not line:
             continue  # 跳过空行
         try:
-            response = requests.get(f"{base_url}/wskkey{line}", timeout=5)
+            response = requests.get(f"{base_url}/{encoding.KEY_PREFIX}{line}", timeout=5)
             print(f"Index NULL, Line {lack_index}: [HTTP {response.status_code}] {response.text}")
             if response.text.startswith("Need"):
                 lack_index = int(response.text.split(" ")[1])

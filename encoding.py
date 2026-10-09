@@ -3,6 +3,19 @@ import hashlib
 import os
 import random
 
+# 网络协议常量（客户端与服务端共用）
+KEY_PREFIX = "wskkey"
+
+# 编码协议布局常量
+INT_LEN = 4
+STR_LEN = 20
+SHA256_LEN = 32
+CHUNK_SIZE = 10200
+FIRST_HEADER_LEN = 3 * INT_LEN + STR_LEN + SHA256_LEN  # 64
+OTHER_HEADER_LEN = 2 * INT_LEN  # 8
+FILE_ID_MIN = 10000000
+FILE_ID_MAX = 99999999
+
 
 def encrypt(binary_data):
     result = []
@@ -13,12 +26,11 @@ def encrypt(binary_data):
 
 
 def split_data(binary_data):
-    chunk_size = 10200
-    if len(binary_data) <= chunk_size - 64:
+    if len(binary_data) <= CHUNK_SIZE - FIRST_HEADER_LEN:
         return [binary_data]
-    result = [binary_data[:chunk_size - 64]]
-    for i in range(chunk_size - 64, len(binary_data), chunk_size - 8):
-        result.append(binary_data[i: i + chunk_size - 8])
+    result = [binary_data[:CHUNK_SIZE - FIRST_HEADER_LEN]]
+    for i in range(CHUNK_SIZE - FIRST_HEADER_LEN, len(binary_data), CHUNK_SIZE - OTHER_HEADER_LEN):
+        result.append(binary_data[i: i + CHUNK_SIZE - OTHER_HEADER_LEN])
     return result
 
 
@@ -33,16 +45,14 @@ def combine_data(split_binary_data, total):
 
 
 def encoding_data(binary_data, file_id, path, sha256):
-    int_len = 4
-    str_len = 20
     split_binary_data = split_data(binary_data)
-    file_id_byte = file_id.to_bytes(int_len, byteorder='big')
-    total_index_byte = len(split_binary_data).to_bytes(int_len, byteorder='big')
+    file_id_byte = file_id.to_bytes(INT_LEN, byteorder='big')
+    total_index_byte = len(split_binary_data).to_bytes(INT_LEN, byteorder='big')
     path_byte = path.encode('utf-8')
-    path_byte = path_byte[:str_len] if len(path_byte) >= str_len else path_byte + b'\x00' * (str_len - len(path_byte))
+    path_byte = path_byte[:STR_LEN] if len(path_byte) >= STR_LEN else path_byte + b'\x00' * (STR_LEN - len(path_byte))
     result = []
     for index, data in enumerate(split_binary_data):
-        index_byte = index.to_bytes(int_len, byteorder='big')
+        index_byte = index.to_bytes(INT_LEN, byteorder='big')
         if index == 0:
             result.append(file_id_byte + index_byte + total_index_byte + path_byte + sha256 + data)
         else:
@@ -52,13 +62,11 @@ def encoding_data(binary_data, file_id, path, sha256):
 
 def decoding_first_line(base64_data):
     data = base64.b64decode(base64_data)
-    file_id = int.from_bytes(data[0: 4], byteorder='big')
+    file_id = int.from_bytes(data[0: INT_LEN], byteorder='big')
     return file_id
 
 
 def decoding_data(encoding_binary_data):
-    int_len = 4
-    str_len = 20
     result = {}
     file_id = 0
     total_index = 0
@@ -66,15 +74,15 @@ def decoding_data(encoding_binary_data):
     sha256 = b''
 
     for da in encoding_binary_data:
-        file_id = int.from_bytes(da[0: 1 * int_len], byteorder='big')
-        index = int.from_bytes(da[1 * int_len: 2 * int_len], byteorder='big')
+        file_id = int.from_bytes(da[0: INT_LEN], byteorder='big')
+        index = int.from_bytes(da[INT_LEN:2 * INT_LEN], byteorder='big')
         if index == 0:
-            total_index = int.from_bytes(da[2 * int_len: 3 * int_len], byteorder='big')
-            path = da[3 * int_len: 3 * int_len + str_len].rstrip(b'\x00').decode('utf-8')
-            sha256 = da[32:64]
-            result[index] = da[64:]
+            total_index = int.from_bytes(da[2 * INT_LEN:3 * INT_LEN], byteorder='big')
+            path = da[3 * INT_LEN:3 * INT_LEN + STR_LEN].rstrip(b'\x00').decode('utf-8')
+            sha256 = da[3 * INT_LEN + STR_LEN:FIRST_HEADER_LEN]
+            result[index] = da[FIRST_HEADER_LEN:]
         else:
-            result[index] = da[8:]
+            result[index] = da[OTHER_HEADER_LEN:]
     lack_index, binary_data = combine_data(result, total_index)
     if lack_index != total_index:
         print(f"lack {lack_index}")
@@ -85,9 +93,9 @@ def encoding(input_file_path, file_name):
     with open(os.path.join(input_file_path, file_name), 'rb') as file:
         binary_data = file.read()
 
-    file_id = random.randint(10000000, 99999999)
+    file_id = random.randint(FILE_ID_MIN, FILE_ID_MAX)
     while os.path.exists(f"client_tmp/{file_id}.txt"):
-        file_id = random.randint(10000000, 99999999)
+        file_id = random.randint(FILE_ID_MIN, FILE_ID_MAX)
     sha256 = hashlib.sha256(binary_data).digest()  # sha256在加密前
     binary_data = encrypt(binary_data)  # 加密
     encoding_binary_data = encoding_data(binary_data, file_id, file_name, sha256)  # 添加前缀

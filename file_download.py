@@ -11,6 +11,15 @@ werkzeug_log.setLevel(logging.ERROR)  # 只记录错误
 
 # 配置文件服务目录
 FILE_SERVER_ROOT = Path("./server_files")
+TMP_DIR = Path("./server_tmp")
+
+# 服务监听配置
+HOST = '0.0.0.0'
+PORT = 80
+
+# 确保必要目录存在
+FILE_SERVER_ROOT.mkdir(parents=True, exist_ok=True)
+TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @app.route('/upload', methods=['POST'])
@@ -148,14 +157,14 @@ def serve_files(filename=''):
 
 @app.route('/log/<path:base64_content>')
 def log_request(base64_content):
-    if not base64_content.startswith("wskkey"):
+    if not base64_content.startswith(encoding.KEY_PREFIX):
         print("Key error")
         return "Key error", 200
-    base64_content = base64_content[6:]
+    base64_content = base64_content[len(encoding.KEY_PREFIX):]
     # 获取文件名
     try:
         file_id = encoding.decoding_first_line(base64_content)
-        filename = f"server_tmp/{file_id}.txt"
+        filename = TMP_DIR / f"{file_id}.txt"
     except:
         print("Base64 error")
         return "Base64 error", 200
@@ -168,4 +177,4 @@ def log_request(base64_content):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app.run(host=HOST, port=PORT, debug=True)
