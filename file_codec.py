@@ -1,7 +1,7 @@
 import base64
 import hashlib
-import os
 import random
+from pathlib import Path
 
 # 网络协议常量（客户端与服务端共用）
 KEY_PREFIX = "wskkey"
@@ -17,8 +17,8 @@ FILE_ID_MIN = 10000000
 FILE_ID_MAX = 99999999
 
 # 客户端目录常量
-CLIENT_FILES_DIR = "client_files"
-CLIENT_TMP_DIR = "client_tmp"
+CLIENT_FILES_DIR = Path("client_files")
+CLIENT_TMP_DIR = Path("client_tmp")
 
 
 def encrypt(binary_data):
@@ -94,11 +94,11 @@ def decoding_data(encoding_binary_data):
 
 
 def encoding(input_file_path, file_name):
-    with open(os.path.join(input_file_path, file_name), 'rb') as file:
+    with open(Path(input_file_path) / file_name, 'rb') as file:
         binary_data = file.read()
 
     file_id = random.randint(FILE_ID_MIN, FILE_ID_MAX)
-    while os.path.exists(os.path.join(CLIENT_TMP_DIR, f"{file_id}.txt")):
+    while (CLIENT_TMP_DIR / f"{file_id}.txt").exists():
         file_id = random.randint(FILE_ID_MIN, FILE_ID_MAX)
     sha256 = hashlib.sha256(binary_data).digest()  # sha256在加密前
     binary_data = encrypt(binary_data)  # 加密
@@ -106,7 +106,7 @@ def encoding(input_file_path, file_name):
 
     # 将二进制数据编码为Base64
     base64_data = [base64.b64encode(da).decode() for da in encoding_binary_data]
-    tmp_file_path = os.path.join(CLIENT_TMP_DIR, f"{file_id}.txt")
+    tmp_file_path = CLIENT_TMP_DIR / f"{file_id}.txt"
     with open(tmp_file_path, 'w') as f:
         f.write('\n'.join(base64_data))
     print(f"Done! Write to file {tmp_file_path}")
@@ -128,7 +128,7 @@ def decoding(file_name, output_dir):
         sha256_status = True
     else:
         print("Sha256 checking error!")
-    with open(os.path.join(output_dir, path), 'wb') as file:
+    with open(Path(output_dir) / path, 'wb') as file:
         file.write(binary_data)
         print(f"Write to {path}")
         write_status = True

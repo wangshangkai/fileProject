@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import file_codec
 
-SERVER_FILES_DIR = "server_files"
+SERVER_FILES_DIR = Path("server_files")
 
 
 if __name__ == '__main__':
