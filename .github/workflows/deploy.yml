@@ -1,0 +1,30 @@
+name: Deploy fileProject to VPS
+
+on:
+  push:
+    branches: [ main ]  # 仅当推送到 main 分支时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            # 1. 进入项目部署目录
+            cd /root/fileProject
+            
+            # 2. 拉取最新代码
+            git pull origin main
+            
+            # 3. 重启服务
+            sudo systemctl restart fileProject
