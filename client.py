@@ -1,5 +1,7 @@
 import requests
 import random
+from pathlib import Path
+
 import file_codec
 
 
@@ -34,8 +36,16 @@ def send_logs(file_path, base_url):
 
 
 if __name__ == "__main__":
-    file_path = file_codec.encoding(file_codec.CLIENT_FILES_DIR, "DJI_0006.JPG")
-    print(file_path)
-    base_url = "http://127.0.0.1/log"
-    send_logs(file_path, base_url)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="文件分片发送客户端")
+    parser.add_argument("ip", help="服务端 IP 地址")
+    parser.add_argument("file_path", help="待发送文件的路径")
+    args = parser.parse_args()
+
+    tmp_dir = Path(args.file_path).parent
+    tmp_file = file_codec.encoding(args.file_path, tmp_dir)
+    print(tmp_file)
+    base_url = f"http://{args.ip}/log"
+    send_logs(tmp_file, base_url)
 

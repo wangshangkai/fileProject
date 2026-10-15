@@ -16,7 +16,6 @@
 ```
 fileProject/
 ├── file_codec.py      # 编码 / 解码核心逻辑
-├── file_codec_test.py # 编解码测试代码
 ├── client.py          # 客户端：发送编码后的文件分片
 ├── server.py          # 服务端：接收分片并提供文件服务
 ├── templates/         # 服务端 HTML 模板
@@ -61,25 +60,20 @@ python server.py
 
 ### 2. 发送文件
 
-编辑 `client.py` 中的文件路径与目标地址后运行：
-
 ```bash
-python client.py
+python client.py <IP地址> <文件路径>
 ```
 
-其中：
-
-- `file_codec.encoding(file_codec.CLIENT_FILES_DIR, "DJI_0006.JPG")` 指定待发送文件。
-- `base_url` 指定服务端地址，例如 `http://127.0.0.1/log`。
-
-> 注意：客户端编码依赖 `client_files` 目录（存放待发送文件）与 `client_tmp` 目录（存放编码结果），请提前创建。
+- 第一个参数为服务端 IP 地址，请求地址为 `http://<IP地址>/log`。
+- 第二个参数为待发送文件的路径；编码生成的分片 txt 会写入该文件所在目录。
 
 ### 3. 直接编解码（可选）
 
-`file_codec_test.py` 用于本地测试编解码流程：
+`file_codec.py` 支持命令行调用：
 
 ```bash
-python file_codec_test.py
+python file_codec.py -encoding <文件路径> <输出目录>
+python file_codec.py -decoding <分片txt路径> <输出目录>
 ```
 
 ## 服务端接口

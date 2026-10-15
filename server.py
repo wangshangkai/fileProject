@@ -10,16 +10,16 @@ werkzeug_log = logging.getLogger('werkzeug')
 werkzeug_log.setLevel(logging.ERROR)  # 只记录错误
 
 # 配置文件服务目录
-FILE_SERVER_ROOT = Path("./server_files")
-TMP_DIR = Path("./server_tmp")
+SERVER_FILES_DIR = Path("./server_files")
+SERVER_TMP_DIR = Path("./server_tmp")
 
 # 服务监听配置
 HOST = '0.0.0.0'
 PORT = 80
 
 # 确保必要目录存在
-FILE_SERVER_ROOT.mkdir(parents=True, exist_ok=True)
-TMP_DIR.mkdir(parents=True, exist_ok=True)
+SERVER_FILES_DIR.mkdir(parents=True, exist_ok=True)
+SERVER_TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @app.route('/upload', methods=['POST'])
@@ -39,15 +39,15 @@ def upload_file():
     # 上传路径与安全检查
     upload_path = request.form.get('path', '')
     if upload_path:
-        target_dir = FILE_SERVER_ROOT / upload_path
+        target_dir = SERVER_FILES_DIR / upload_path
         # 安全检查
         try:
-            target_dir.resolve().relative_to(FILE_SERVER_ROOT.resolve())
+            target_dir.resolve().relative_to(SERVER_FILES_DIR.resolve())
         except ValueError:
             abort(403)
         target_dir.mkdir(parents=True, exist_ok=True)
     else:
-        target_dir = FILE_SERVER_ROOT
+        target_dir = SERVER_FILES_DIR
 
     # 保存文件
     save_path = target_dir / file.filename
@@ -70,10 +70,10 @@ def main_page():
 @app.route('/files/<path:filename>')
 @app.route('/files/')
 def serve_files(filename=''):
-    target_path = FILE_SERVER_ROOT / filename
+    target_path = SERVER_FILES_DIR / filename
     # 安全检查：防止目录遍历攻击
     try:
-        target_path.resolve().relative_to(FILE_SERVER_ROOT.resolve())
+        target_path.resolve().relative_to(SERVER_FILES_DIR.resolve())
     except ValueError:
         abort(403)  # 禁止访问超出根目录的路径
 
@@ -94,7 +94,7 @@ def serve_files(filename=''):
     # 如果是文件，发送文件内容
     elif target_path.is_file():
         return send_from_directory(
-            FILE_SERVER_ROOT,
+            SERVER_FILES_DIR,
             filename,
             as_attachment=False  # False表示尝试在浏览器中显示，True强制下载
         )
@@ -112,8 +112,8 @@ def log_request(base64_content):
     base64_content = base64_content[len(file_codec.KEY_PREFIX):]
     # 获取文件名
     try:
-        file_id = file_codec.decoding_first_line(base64_content)
-        filename = TMP_DIR / f"{file_id}.txt"
+        file_id = file_codec.get_file_id(base64_content)
+        filename = SERVER_TMP_DIR / f"{file_id}.txt"
     except:
         print("Base64 error")
         return "Base64 error", 200
@@ -121,7 +121,7 @@ def log_request(base64_content):
     # 将内容写入文件
     with open(filename, 'a') as f:
         f.write(base64_content + '\n')
-    lack_index, sha256_status, write_status = file_codec.decoding(filename, FILE_SERVER_ROOT)
+    lack_index, sha256_status, write_status = file_codec.decoding(filename, SERVER_FILES_DIR)
     return f"Need {lack_index} file_id {file_id} sha256 {sha256_status} write {write_status}", 200
 
 
