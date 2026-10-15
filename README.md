@@ -19,6 +19,9 @@ fileProject/
 ├── file_codec_test.py # 编解码测试代码
 ├── client.py          # 客户端：发送编码后的文件分片
 ├── server.py          # 服务端：接收分片并提供文件服务
+├── templates/         # 服务端 HTML 模板
+│   ├── upload_page.html  # 上传页面
+│   └── file_list.html    # 目录浏览页面
 ├── server_files/      # 服务端还原后的文件存储目录
 └── server_tmp/        # 服务端接收到的分片临时存储目录
 ```

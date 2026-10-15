@@ -20,7 +20,18 @@ FILE_ID_MAX = 99999999
 CLIENT_FILES_DIR = Path("client_files")
 CLIENT_TMP_DIR = Path("client_tmp")
 
-
+# encrypt加密规则：
+# 0->0
+# 1->254
+# 2->2
+# 3->252
+# ...
+# 127->128
+# 128->127
+# 129->129
+# ...
+# 254->1
+# 255->255
 def encrypt(binary_data):
     result = []
     for i in range(len(binary_data)):
@@ -28,7 +39,7 @@ def encrypt(binary_data):
         result.append(255 - x if (x <= 127 and x % 2 == 1) or (x > 127 and x % 2 == 0) else x)
     return bytes(result)
 
-
+# 分割字节流，使得加上头后的最大长度为CHUNK_SIZE
 def split_data(binary_data):
     if len(binary_data) <= CHUNK_SIZE - FIRST_HEADER_LEN:
         return [binary_data]
@@ -37,7 +48,8 @@ def split_data(binary_data):
         result.append(binary_data[i: i + CHUNK_SIZE - OTHER_HEADER_LEN])
     return result
 
-
+# 如果数据完整，返回(总条数, 合并后的字符串)
+# 如果数据不完整，返回(缺失的序号，空字符串)
 def combine_data(split_binary_data, total):
     result = b''
     for i in range(total):
@@ -47,7 +59,8 @@ def combine_data(split_binary_data, total):
             return i, b''
     return total, result
 
-
+# 第一节：file_id(4 bytes)/index(4 bytes)/total_index(4 bytes)/path(20 bytes)/sha256(32 bytes)/data
+# 后续节：file_id(4 bytes)/index(4 bytes)/data
 def encoding_data(binary_data, file_id, path, sha256):
     split_binary_data = split_data(binary_data)
     file_id_byte = file_id.to_bytes(INT_LEN, byteorder='big')
@@ -63,13 +76,13 @@ def encoding_data(binary_data, file_id, path, sha256):
             result.append(file_id_byte + index_byte + data)
     return result
 
-
+# 获得当前字符串所属的file_id
 def decoding_first_line(base64_data):
     data = base64.b64decode(base64_data)
     file_id = int.from_bytes(data[0: INT_LEN], byteorder='big')
     return file_id
 
-
+# 将多行字节流提取出内容再合并，如果字节流不完整，返回binary_data为空
 def decoding_data(encoding_binary_data):
     result = {}
     file_id = 0
@@ -92,7 +105,7 @@ def decoding_data(encoding_binary_data):
         print(f"lack {lack_index}")
     return binary_data, file_id, path, sha256, lack_index
 
-
+# 将原始文件转为加密分段base64处理后的txt文件
 def encoding(input_file_path, file_name):
     with open(Path(input_file_path) / file_name, 'rb') as file:
         binary_data = file.read()
@@ -112,7 +125,7 @@ def encoding(input_file_path, file_name):
     print(f"Done! Write to file {tmp_file_path}")
     return tmp_file_path
 
-
+# 将加密分段base64处理后的txt文件转为原始文件
 def decoding(file_name, output_dir):
     with open(file_name, 'r') as file:
         base64_data = file.readlines()

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>Index of {{ path }}</title></head>
+<body>
+    <h1>Index of {{ path }}</h1>
+    <hr>
+    <ul>
+        {% if not is_root %}
+        <li><a href="../">../</a></li>
+        {% endif %}
+        {% for dir in dirs %}
+        <li><a href="{{ dir }}/">{{ dir }}/</a></li>
+        {% endfor %}
+        {% for file in files %}
+        <li><a href="{{ file }}">{{ file }}</a></li>
+        {% endfor %}
+    </ul>
+    <hr>
+</body>
+</html>
