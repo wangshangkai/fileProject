@@ -22,6 +22,15 @@ SERVER_FILES_DIR.mkdir(parents=True, exist_ok=True)
 SERVER_TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
+@app.after_request
+def add_cors_headers(response):
+    # 允许浏览器页面跨域下载和上传同步 ZIP。
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     # 检查是否有文件被上传
