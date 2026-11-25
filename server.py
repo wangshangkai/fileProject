@@ -91,6 +91,8 @@ def serve_files(filename=''):
         files = []
         dirs = []
         for item in target_path.iterdir():
+            if filename == '' and item.name.startswith('private'):
+                continue
             if item.is_file():
                 files.append(item.name)
             elif item.is_dir():
