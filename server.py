@@ -31,7 +31,7 @@ def add_cors_headers(response):
     return response
 
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload/', methods=['POST'])
 def upload_file():
     # 检查是否有文件被上传
     if 'file' not in request.files:
@@ -65,7 +65,7 @@ def upload_file():
     return redirect(url_for('serve_files', filename=upload_path))
 
 
-@app.route('/upload', methods=['GET'])
+@app.route('/upload/', methods=['GET'])
 def upload_file_page():
     # GET请求显示上传表单
     return render_template('upload_page.html')
